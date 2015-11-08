@@ -1,22 +1,27 @@
 package com.example.assa.gnomechild;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -24,6 +29,7 @@ import android.view.View;
 
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
@@ -37,10 +43,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.TreeMap;
-import android.widget.Toast;
 
-import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.tcp.XMPPTCPConnection;
+import android.widget.Toast;
 
 
 public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
@@ -51,11 +55,11 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private static TextToSpeech engine;
     private static BufferedReader reader;
     private static HashMap<String, Answer> answers = new HashMap<String, Answer>();
+    private static int count;
 
-    protected static final String HOST = "assachana.uk"; // eJabbered server ip
-    protected static final int PORT = 5222; // server port
-    //protected static final String SERVICE = "2.223.149.8"; // not sure this is needed
-    protected static String rUsername = "test"; // recipient for messages, IP is not needed, just the username
+    private ImageView picture;
+
+    static final int REQUEST_IMAGE_CAPTURE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +68,11 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
         engine = new TextToSpeech(this, this);
 
+        count = 0;
+
+        picture = (ImageView) findViewById(R.id.imageView3);
 
     }
-
 
 
     public void fabClicked(View v) {
@@ -98,6 +104,22 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         }
     }
 
+    public void netflixAndChill() {
+        AlertDialog.Builder alertadd = new AlertDialog.Builder(
+                this);
+        LayoutInflater factory = LayoutInflater.from(this);
+        final View view = factory.inflate(R.layout.and_chill, null);
+        alertadd.setView(view );
+        alertadd.setCancelable(false);
+        alertadd.setNeutralButton("Accept?", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dlg, int sumthin) {
+                playWeed();
+            }
+        });
+
+        alertadd.show();
+    }
+
     /**
      * Receiving speech input
      */
@@ -112,10 +134,13 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     setSpeechText(result.get(0));
                     Toast.makeText(getApplicationContext(),
-                                  getTextToSpeak(),
-                                Toast.LENGTH_SHORT).show();
-                    if (getTextToSpeak().equals("swag")) {
+                            getTextToSpeak(),
+                            Toast.LENGTH_SHORT).show();
+                    if (getTextToSpeak().toLowerCase().contains("netflix")) {
+                        netflixAndChill();
+                    }
 
+                    if (getTextToSpeak().equals("swag")) {
                         playMp3();
                     } else {
                         talk(answer(getTextToSpeak()));
@@ -123,6 +148,12 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                     break;
                 }
             }
+        }
+
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            picture.setImageBitmap(imageBitmap);
         }
     }
 
@@ -139,7 +170,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     }
 
     @Override
-    public void onStart(){
+    public void onStart() {
         super.onStart();
         init();
     }
@@ -209,8 +240,22 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         try {
             return possibleAnswers.firstEntry().getValue();
         } catch (NullPointerException e) {
+            count++;
+            if (count == 3) {
+                return "A ring a ding a ding a dong a ding dong ding dong ding ding. mate!";
+            } else if (count > 3) {
+                return "public void bribeJudges(){. Oops.";
+            }
             return "I have no clue mate";
         }
+    }
+
+    public void playWeed() {
+        for (int i = 0; i < 3; i++) {
+            final MediaPlayer mp = MediaPlayer.create(this, R.raw.weed);
+            mp.start();
+        }
+
     }
 
     public String playMp3() {
@@ -218,9 +263,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             final MediaPlayer mp = MediaPlayer.create(this, R.raw.mlg);
             mp.start();
         } catch (Exception e) {
-            return "A ring a ding a ding a dong a ding dong ding dong ding ding. mate!";
+
         }
-        return "public void bribeJudges(){. Oops.";
+        return "public void bribeJudges(){. Oops."; //un reachable
+    }
+
+    public void camera(View v) {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
     }
 
 }
