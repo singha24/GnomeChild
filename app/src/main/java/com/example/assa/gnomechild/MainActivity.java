@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.TreeMap;
 
 import android.widget.Toast;
@@ -58,6 +59,11 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private static int count;
 
     private ImageView picture;
+    private static Random rand = new Random();
+    private GPSTracker gps;
+
+    private static String[] phrases = new String[]{"It's been a long day, without you my friend, now i'm sad.",
+    "Oh poppy cock!", "Internal Core Meltdown", "Can not compute", "And the winner issssssss ME!", "I like bit butts and I cannot lie", "do do doo, do do do dooo, do do do, do du do do do it dooo"};
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
@@ -74,6 +80,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     }
 
+    public static String getRandomThing() {
+        int i = rand.nextInt(phrases.length - 1);
+        return phrases[i];
+    }
+
+    public void heatMap(){
+        Intent intent = new Intent(MainActivity.this, WebActivity.class);
+        startActivity(intent);
+    }
+
 
     public void fabClicked(View v) {
         promptSpeechInput();
@@ -85,6 +101,27 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     public String getTextToSpeak() {
         return text;
+    }
+
+    public void getLocation(){
+        // create class object
+        gps = new GPSTracker(MainActivity.this);
+
+        // check if GPS enabled
+        if(gps.canGetLocation()) {
+
+            double latitude = gps.getLatitude();
+            double longitude = gps.getLongitude();
+
+            // \n is for new line
+            Toast.makeText(getApplicationContext(), "Your Location is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
+        }else{
+            // can't get location
+            // GPS or Network is not enabled
+            // Ask user to enable GPS/network in settings
+            gps.showSettingsAlert();
+        }
+
     }
 
     //Speech Input
@@ -136,11 +173,21 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                     Toast.makeText(getApplicationContext(),
                             getTextToSpeak(),
                             Toast.LENGTH_SHORT).show();
+                    //Filthy IF statements
                     if (getTextToSpeak().toLowerCase().contains("netflix")) {
                         netflixAndChill();
                     }
 
-                    if (getTextToSpeak().equals("swag")) {
+                    if(getTextToSpeak().toLowerCase().contains("heat")){
+                        heatMap();
+                    }
+
+                    if(getTextToSpeak().toLowerCase().contains("location")){
+                        getLocation();
+                    }
+
+
+                    if (getTextToSpeak().toLowerCase().contains("swag")) {
                         playMp3();
                     } else {
                         talk(answer(getTextToSpeak()));
@@ -244,9 +291,11 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             if (count == 3) {
                 return "A ring a ding a ding a dong a ding dong ding dong ding ding. mate!";
             } else if (count > 3) {
-                return "public void bribeJudges(){. Oops.";
+                String s = getRandomThing();
+                return s;
             }
-            return "I have no clue mate";
+            String s = getRandomThing();
+            return s;
         }
     }
 
@@ -265,7 +314,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         } catch (Exception e) {
 
         }
-        return "public void bribeJudges(){. Oops."; //un reachable
+        return "public. void. bribeJudges(){. errrrrrr. Oops."; //un reachable
     }
 
     public void camera(View v) {
