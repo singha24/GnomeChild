@@ -1,16 +1,23 @@
 package com.example.assa.gnomechild;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.hardware.SensorManager;
+import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +26,8 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.ActivityCompat;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 import android.view.LayoutInflater;
@@ -39,13 +48,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.TreeMap;
 
+import android.widget.TimePicker;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 
 public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
@@ -60,10 +72,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     private ImageView picture;
     private static Random rand = new Random();
-    private GPSTracker gps;
+
+    AlarmManager alarmManager;
+    private PendingIntent pendingIntent;
+    private Button alarm;
+
+    final static int RQS_1 = 1;
+
 
     private static String[] phrases = new String[]{"It's been a long day, without you my friend, now i'm sad.",
-    "Oh poppy cock!", "Internal Core Meltdown", "Can not compute", "And the winner issssssss ME!", "I like bit butts and I cannot lie", "do do doo, do do do dooo, do do do, do du do do do it dooo"};
+    "Oh poppy cock!", "I like bit butts and I cannot lie", "do do doo, do do do dooo, do do do, do du do do do it dooo", "u wot mate", "shut ya gabber"};
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
 
@@ -78,7 +96,55 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
         picture = (ImageView) findViewById(R.id.imageView3);
 
+        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        alarm = (Button) findViewById(R.id.button);
+        alarm.setVisibility(View.INVISIBLE);
+        /*alarm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showTimePicker();
+            }
+        });*/
+
     }
+
+    public void showTimePicker(){
+        final Calendar c = Calendar.getInstance();
+        int hour = c.get(Calendar.HOUR_OF_DAY);
+        int minute = c.get(Calendar.MINUTE);
+
+
+
+        TimePickerDialog tpd = new TimePickerDialog(this,
+                new TimePickerDialog.OnTimeSetListener() {
+
+                    @Override
+                    public void onTimeSet(TimePicker view, int hourOfDay,
+                                          int minute) {
+                        setAlarm(c);
+
+                    }
+                }, hour, minute, false);
+        tpd.setTitle("Set Alarm Time");
+        tpd.show();
+    }
+
+    private void setAlarm(Calendar targetCal) {
+
+        Toast.makeText(getApplicationContext(),
+                "Sweet dreams ;)",
+                Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(getBaseContext(), MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                getBaseContext(), RQS_1, intent, 0);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        alarmManager.set(AlarmManager.RTC_WAKEUP, targetCal.getTimeInMillis(),
+                pendingIntent);
+
+    }
+
 
     public static String getRandomThing() {
         int i = rand.nextInt(phrases.length - 1);
@@ -101,27 +167,6 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     public String getTextToSpeak() {
         return text;
-    }
-
-    public void getLocation(){
-        // create class object
-        gps = new GPSTracker(MainActivity.this);
-
-        // check if GPS enabled
-        if(gps.canGetLocation()) {
-
-            double latitude = gps.getLatitude();
-            double longitude = gps.getLongitude();
-
-            // \n is for new line
-            Toast.makeText(getApplicationContext(), "Your Location is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
-        }else{
-            // can't get location
-            // GPS or Network is not enabled
-            // Ask user to enable GPS/network in settings
-            gps.showSettingsAlert();
-        }
-
     }
 
     //Speech Input
@@ -181,11 +226,6 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                     if(getTextToSpeak().toLowerCase().contains("heat")){
                         heatMap();
                     }
-
-                    if(getTextToSpeak().toLowerCase().contains("location")){
-                        getLocation();
-                    }
-
 
                     if (getTextToSpeak().toLowerCase().contains("swag")) {
                         playMp3();
@@ -251,7 +291,14 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private void talk(String text) {
         engine.setPitch((float) 5.0);
         //engine.setSpeechRate();
-        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+
+        if(Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        } else {
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+
+        //engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 
     public void init() {
